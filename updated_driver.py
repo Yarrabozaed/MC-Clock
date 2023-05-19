@@ -4,22 +4,27 @@ import neopixel
 import time
 import ssd1306
 from ssd1306 import SSD1306_I2C
+from utime import sleep
+import uasyncio as asyncio
+import sys
+
 
 xAxis = ADC(Pin(27))
 yAxis = ADC(Pin(26))
 joystick_button = Pin(16,Pin.IN, Pin.PULL_UP)
 
-buzzer = PWM(Pin(6))
+buzzer = PWM(Pin(20))
 
 
 led_len = 76
+#was 10
 np = neopixel.NeoPixel(machine.Pin(10), led_len, bpp=3)
 
 
 global time_dis
 global led_status
 
-led_status = "morning"
+led_status = "na"
 
 #date variables
 rtc=RTC()
@@ -32,6 +37,37 @@ oled = ssd1306.SSD1306_I2C(oled_width, oled_height, i2c)
 
 alarm_single_led = Pin(7, Pin.OUT) #initialize digital pin as an output for led
 off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an input
+
+adc = ADC(Pin(26))
+    
+    
+"""
+while True:
+    duty = 0; #duty range between  0 and 65535
+    value = adc.read_u16() #reads in pot value between 0 and 1023
+    if (value < 100):
+        duty = 6553
+    elif (value < 200):
+        duty = 13106
+    elif (value < 300):
+        duty = 19659
+    elif (value < 400):
+        duty = 26212
+    elif (value < 500):
+        duty = 32765
+    elif (value < 600):
+        duty = 39318
+    elif (value < 700):
+        duty = 45871
+    elif (value < 800):
+        duty = 52424
+    elif (value < 900):
+        duty = 58977
+    elif (value < 1023):
+        duty = 65530
+    playsong(song, duty)
+"""
+
 
 def display(output):
     print(output)
@@ -90,6 +126,17 @@ def time_setter():
                 digit_position = digit_position - 1
             else:
                 digit_position = 2
+                
+            if digit_position == 0:
+                display("Hours")
+                utime.sleep(2)
+            elif digit_position == 1:
+                display("Minutes")
+                utime.sleep(2)
+            else:
+                display("AM/PM")
+                utime.sleep(2)
+    
             print(digit_position)
             
         elif xValue >= 60000:
@@ -99,6 +146,18 @@ def time_setter():
                 digit_position = digit_position + 1
             else:
                 digit_position = 0
+            
+            
+            if digit_position == 0:
+                display("Hours")
+                utime.sleep(2)
+            elif digit_position == 1:
+                display("Minutes")
+                utime.sleep(2)
+            else:
+                display("AM/PM")
+                utime.sleep(2)
+            
             print(digit_position)
             
         if yValue <= 600:
@@ -126,7 +185,7 @@ def time_setter():
                 else:
                     time_dis[2] = 0
             
-            print_time(time_dis)
+            display(print_time(time_dis))
             
         elif yValue >= 60000:
             yStatus = "down"
@@ -152,10 +211,12 @@ def time_setter():
                     time_dis[2] = 1
                 else:
                     time_dis[2] = 0
-            
-            print_time(time_dis)
+            display(print_time(time_dis))
             
         if joystick_buttonValue == 0:
+            display("Exiting...")
+            utime.sleep(2)
+            
             print("exiting setup mode")
             
             return
@@ -180,11 +241,40 @@ def clock_updater(current):
         time_led_check(current)
         
  
-def buzzer_start():
-    #Set buzzer 'pitch'
-    buzzer.freq(500)
-    #Set buzzer loudness
-    buzzer.duty_u16(1000)
+async def buzzer_start():
+    tones = {
+    "C4": 262,
+    "D4": 294,
+    "E4": 330,
+    "F4": 349,
+    "G4": 392,
+    "A4": 440,
+    "B4": 494,
+    "C5": 523,
+    "D5": 587,
+    "E5": 659,
+    "F5": 698,
+    "G5": 784,
+    "A5": 880,
+    "B5": 988
+    }
+
+    
+    song = ["A4","F4","D5","C5","P","A4","F4","P","D4","G4","P","P","P",
+"F4","G4","A4","D5","P","E5","F5","C5","P","P","P","P","P","P","P"]
+    while True:
+        for i in range(len(song)):
+            if song[i] == "P":
+                buzzer.duty_u16(0)
+            else:
+                buzzer.duty_u16(1000)
+                buzzer.freq(tones[song[i]])
+            
+            await asyncio.sleep(0.5)  # Adjust the sleep duration as needed
+            
+        buzzer.duty_u16(0)
+        await asyncio.sleep(1)
+    
 
 def buzzer_stop():
     buzzer.duty_u16(0)
@@ -244,7 +334,7 @@ def evening_colors():
             count = 0
             np.write()
             
-def alarm_colors(dt):
+async def alarm_colors(dt):
     count = 0
     net = 0
     current_col = "reds"
@@ -256,11 +346,15 @@ def alarm_colors(dt):
     while True:
         logic_state = off_button.value()
         if logic_state == True:
-            break
+            return dt
         count = 0
         net = 0
     
         for net in range(led_len):
+            logic_state = off_button.value()
+            if logic_state == True:
+                return dt
+            
             print(time_to_change)
             if current_col == "reds":
                 if count == 0:
@@ -315,15 +409,16 @@ def colors_off():
     np.fill((0,0,0))
     np.write()
 
-def alarm_on(dt):
-    buzzer_start()
-    new_dt = alarm_colors(dt)
-    
+async def alarm_on(dt):
+    loop = asyncio.get_event_loop()
+    loop.create_task(buzzer_start())
+    task = loop.create_task(alarm_colors(dt))
+
+    new_dt = await task  # Wait for the completion of alarm_colors()
+    print(new_dt)
     return new_dt
-        
-    #need to add audio on function
     
-def alarm_off(pin):
+def alarm_off():
     buzzer_stop()
     colors_off()
     #need to add audio off function
@@ -339,19 +434,49 @@ def time_led_check(t):
     elif (t[0] == 12 or (t[0] > 0 and t[0] < 6)) and t[2] == 1 and led_status != "evening":
         evening_colors()
         led_status = "evening"
-    else:
+    elif (t[0] >= 7 and t[0] < 3) and led_status != "night":
         night_colors()
         led_status = "night"
 
 
 def driver():
+    oled.text("Hello!", 45, 0)
+    oled.text("I am your clock", 5, 20)
+    oled.text(":)", 45, 40)
+    oled.show()
+
+    utime.sleep(3)
+    oled.fill(0)
+    
+    
+    
     global time_dis
     display_time = [3,50,0]
-    seconds = 0
-    turn_off_alarm = False
-    alarm_time = [3,55,0]
+    alarm_time = [4,1,0]
     
-    night_colors()
+    oled.text("Setup the alarm...", 5, 20)
+    oled.show()
+
+    utime.sleep(1.5)
+    oled.fill(0)
+    
+    time_setter()
+    alarm_time = time_dis
+    
+    utime.sleep(0.5)
+    oled.fill(0)
+    
+    oled.text("Setup the time...", 5, 20)
+    oled.show()
+
+    utime.sleep(1.5)
+    oled.fill(0)
+    
+    time_setter()
+    display_time = time_dis
+    oled.fill(0)
+    
+    #night_colors()
     
     while True:
         if joystick_button.value() == 0:
@@ -359,7 +484,7 @@ def driver():
             display_time = time_dis
             utime.sleep(1)
         else:
-            for i in range(60):
+            for i in range(5):
                 if joystick_button.value() == 0:
                     break
                 utime.sleep(1)
@@ -369,20 +494,11 @@ def driver():
             display(to_display)
             
         if display_time == alarm_time:
-            display_time = alarm_on(display_time)
-        
-        #Alarm on/off mode code -> needs HW testing
-        """
-        if display_time == alarm_time
-            alarm_on()
-            turn_off_alarm = True
-            while off_button.value() == 0:
-                utime.sleep(0.2)
-        
-        if turn_off_alarm == True:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(alarm_on(display_time))
             alarm_off()
-            turn_off_alarm = False
-        """
+
             
 driver()
+
 
