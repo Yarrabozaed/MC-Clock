@@ -3,8 +3,6 @@ import utime
 import neopixel
 import time
 import ssd1306
-from ssd1306 import SSD1306_I2C
-from utime import sleep
 import uasyncio as asyncio
 import sys
 
