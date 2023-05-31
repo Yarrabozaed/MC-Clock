@@ -37,13 +37,13 @@ alarm_single_led = Pin(7, Pin.OUT) #initialize digital pin as an output for led
 off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an input
 
 adc = ADC(Pin(26))
-duty = 0
+duty = 32765
 
 motor_pin = machine.Pin(22, machine.Pin.OUT)
 
 adc.irq(trigger= Pin.IRQ_RISING, handler=volume)
     
-def volume:
+def volume():
     while True:
         global duty; #duty range between  0 and 65535
         value = adc.read_u16() #reads in pot value between 0 and 1023
