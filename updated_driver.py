@@ -39,7 +39,8 @@ alarm_single_led = Pin(7, Pin.OUT) #initialize digital pin as an output for led
 off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an input
 
 adc = ADC(Pin(26))
-    
+
+motor_pin = machine.Pin(22, machine.Pin.OUT)
     
 """
 while True:
@@ -68,6 +69,11 @@ while True:
     playsong(song, duty)
 """
 
+def turn_motor_on():
+    motor_pin.on()
+
+def turn_motor_off():
+    motor_pin.off()
 
 def display(output):
     print(output)
@@ -410,6 +416,7 @@ def colors_off():
     np.write()
 
 async def alarm_on(dt):
+    turn_motor_on()
     loop = asyncio.get_event_loop()
     loop.create_task(buzzer_start())
     task = loop.create_task(alarm_colors(dt))
@@ -419,6 +426,7 @@ async def alarm_on(dt):
     return new_dt
     
 def alarm_off():
+    turn_motor_off()
     buzzer_stop()
     colors_off()
     #need to add audio off function
@@ -440,6 +448,7 @@ def time_led_check(t):
 
 
 def driver():
+    turn_motor_on()
     oled.text("Hello!", 45, 0)
     oled.text("I am your clock", 5, 20)
     oled.text(":)", 45, 40)
@@ -484,7 +493,7 @@ def driver():
             display_time = time_dis
             utime.sleep(1)
         else:
-            for i in range(5):
+            for i in range(60):
                 if joystick_button.value() == 0:
                     break
                 utime.sleep(1)
@@ -500,5 +509,3 @@ def driver():
 
             
 driver()
-
-
