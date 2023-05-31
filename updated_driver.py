@@ -1,4 +1,4 @@
-from machine import Pin, ADC, PWM, RTC, ADC, I2C
+from machine import Pin, ADC, PWM, RTC, I2C
 import utime
 import neopixel
 import time
@@ -37,35 +37,38 @@ alarm_single_led = Pin(7, Pin.OUT) #initialize digital pin as an output for led
 off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an input
 
 adc = ADC(Pin(26))
+duty = 0
 
 motor_pin = machine.Pin(22, machine.Pin.OUT)
+
+adc.irq(trigger= Pin.IRQ_RISING, handler=volume)
     
-"""
-while True:
-    duty = 0; #duty range between  0 and 65535
-    value = adc.read_u16() #reads in pot value between 0 and 1023
-    if (value < 100):
-        duty = 6553
-    elif (value < 200):
-        duty = 13106
-    elif (value < 300):
-        duty = 19659
-    elif (value < 400):
-        duty = 26212
-    elif (value < 500):
-        duty = 32765
-    elif (value < 600):
-        duty = 39318
-    elif (value < 700):
-        duty = 45871
-    elif (value < 800):
-        duty = 52424
-    elif (value < 900):
-        duty = 58977
-    elif (value < 1023):
-        duty = 65530
-    playsong(song, duty)
-"""
+def volume:
+    while True:
+        global duty; #duty range between  0 and 65535
+        value = adc.read_u16() #reads in pot value between 0 and 1023
+        if (value < 100):
+            duty = 6553
+        elif (value < 200):
+            duty = 13106
+        elif (value < 300):
+            duty = 19659
+        elif (value < 400):
+            duty = 26212
+        elif (value < 500):
+            duty = 32765
+        elif (value < 600):
+            duty = 39318
+        elif (value < 700):
+            duty = 45871
+        elif (value < 800):
+            duty = 52424
+        elif (value < 900):
+            duty = 58977
+        elif (value < 1023):
+            duty = 65530
+        #playsong(song, duty)
+
 
 def turn_motor_on():
     motor_pin.on()
@@ -266,12 +269,13 @@ async def buzzer_start():
     
     song = ["A4","F4","D5","C5","P","A4","F4","P","D4","G4","P","P","P",
 "F4","G4","A4","D5","P","E5","F5","C5","P","P","P","P","P","P","P"]
+    global duty
     while True:
         for i in range(len(song)):
             if song[i] == "P":
                 buzzer.duty_u16(0)
             else:
-                buzzer.duty_u16(1000)
+                buzzer.duty_u16(duty)
                 buzzer.freq(tones[song[i]])
             
             await asyncio.sleep(0.5)  # Adjust the sleep duration as needed
