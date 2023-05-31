@@ -3,16 +3,18 @@ import utime
 import neopixel
 import time
 import ssd1306
+from ssd1306 import SSD1306_I2C
+from utime import sleep
 import uasyncio as asyncio
 import sys
-
+import _thread
 
 xAxis = ADC(Pin(27))
 yAxis = ADC(Pin(26))
 joystick_button = Pin(16,Pin.IN, Pin.PULL_UP)
 
 buzzer = PWM(Pin(20))
-
+duty = 32765
 
 led_len = 76
 #was 10
@@ -37,15 +39,12 @@ alarm_single_led = Pin(7, Pin.OUT) #initialize digital pin as an output for led
 off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an input
 
 adc = ADC(Pin(26))
-duty = 32765
 
 motor_pin = machine.Pin(22, machine.Pin.OUT)
-
-adc.irq(trigger= Pin.IRQ_RISING, handler=volume)
     
 def volume():
     while True:
-        global duty; #duty range between  0 and 65535
+        duty = 0; #duty range between  0 and 65535
         value = adc.read_u16() #reads in pot value between 0 and 1023
         if (value < 100):
             duty = 6553
@@ -67,8 +66,7 @@ def volume():
             duty = 58977
         elif (value < 1023):
             duty = 65530
-        #playsong(song, duty)
-
+        return duty
 
 def turn_motor_on():
     motor_pin.on()
@@ -248,7 +246,7 @@ def clock_updater(current):
         time_led_check(current)
         
  
-async def buzzer_start():
+def buzzer_start():
     tones = {
     "C4": 262,
     "D4": 294,
@@ -267,21 +265,28 @@ async def buzzer_start():
     }
 
     
-    song = ["A4","F4","D5","C5","P","A4","F4","P","D4","G4","P","P","P",
-"F4","G4","A4","D5","P","E5","F5","C5","P","P","P","P","P","P","P"]
+    song = ["A4","F4","D5","C5","P","A4","F4","P","D4","G4","P","P","P","F4","G4","A4","D5","P","E5","F5","C5","P","P","P","P","P","P","P"]
     global duty
     while True:
+        logic_state = off_button.value()
+        if logic_state == True:
+            return 0
+        duty = volume()
         for i in range(len(song)):
             if song[i] == "P":
                 buzzer.duty_u16(0)
             else:
                 buzzer.duty_u16(duty)
                 buzzer.freq(tones[song[i]])
+                
+            logic_state = off_button.value()
+            if logic_state == True:
+                return 0
             
-            await asyncio.sleep(0.5)  # Adjust the sleep duration as needed
+            utime.sleep(0.3)  # Adjust the sleep duration as needed
             
         buzzer.duty_u16(0)
-        await asyncio.sleep(1)
+        utime.sleep(0.5)
     
 
 def buzzer_stop():
@@ -342,7 +347,7 @@ def evening_colors():
             count = 0
             np.write()
             
-async def alarm_colors(dt):
+def alarm_colors(dt):
     count = 0
     net = 0
     current_col = "reds"
@@ -417,13 +422,11 @@ def colors_off():
     np.fill((0,0,0))
     np.write()
 
-async def alarm_on(dt):
-    turn_motor_on()
-    loop = asyncio.get_event_loop()
-    loop.create_task(buzzer_start())
-    task = loop.create_task(alarm_colors(dt))
-
-    new_dt = await task  # Wait for the completion of alarm_colors()
+def alarm_on(dt):
+    second_thread = _thread.start_new_thread(buzzer_start,())
+    #turn_motor_on()
+    new_dt = alarm_colors(dt)
+    
     print(new_dt)
     return new_dt
     
@@ -437,14 +440,15 @@ def time_led_check(t):
     global led_status
     #print(t)
     #4am -> 11am, 12pm -> 6pm, 7pm -> 3am
-    if int(t[0]) > 4 and int(t[0]) < 12 and int(t[2]) == 0 and led_status != "morning":
-        #set to morning colors
+    print(t)
+    print(led_status)
+    if int(t[0]) >= 4 and int(t[0]) <= 12 and int(t[2]) == 0 and led_status != "morning":
         morning_colors()
         led_status = "morning"
-    elif (t[0] == 12 or (t[0] > 0 and t[0] < 6)) and t[2] == 1 and led_status != "evening":
+    elif (int(t[0]) == 12 or (int(t[0]) >= 0 and int(t[0]) <= 6)) and int(t[2]) == 1 and led_status != "evening":
         evening_colors()
         led_status = "evening"
-    elif (t[0] >= 7 and t[0] < 3) and led_status != "night":
+    elif (int(t[0]) >= 7 and int(t[2]) == 1) or (int(t[2]) == 0 and int(t[0]) <= 3) and led_status != "night":
         night_colors()
         led_status = "night"
 
@@ -487,15 +491,16 @@ def driver():
     display_time = time_dis
     oled.fill(0)
     
-    #night_colors()
-    
+    display_time = [3,50,0]
+    alarm_time = [3,51,0]
+
     while True:
         if joystick_button.value() == 0:
             time_setter()
             display_time = time_dis
             utime.sleep(1)
         else:
-            for i in range(60):
+            for i in range(5):
                 if joystick_button.value() == 0:
                     break
                 utime.sleep(1)
@@ -505,8 +510,7 @@ def driver():
             display(to_display)
             
         if display_time == alarm_time:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(alarm_on(display_time))
+            alarm_on(display_time)
             alarm_off()
 
             
