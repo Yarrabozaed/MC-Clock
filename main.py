@@ -443,9 +443,6 @@ def driver():
     time_setter()
     display_time = time_dis
     oled.fill(0)
-    
-    display_time = [3,50,0]
-    alarm_time = [3,51,0]
 
     while True:
         if joystick_button.value() == 0:
