@@ -127,6 +127,28 @@ def time_setter():
         if xValue <= 600:
             xStatus = "left"
             
+            if digit_position == 0:
+                if time_dis[digit_position] - 1 >= 1:
+                    time_dis[digit_position] = time_dis[digit_position] - 1
+                    if time_dis[digit_position] == 12:
+                        if time_dis[2] == 0:
+                            time_dis[2] = 1
+                        else:
+                            time_dis[2] = 0
+                else:
+                    time_dis[digit_position] = 12
+            elif digit_position == 1:
+                if time_dis[digit_position] - 1 >= 0:
+                    time_dis[digit_position] = time_dis[digit_position] - 1
+                else:
+                    time_dis[digit_position] = 59
+            else:
+                if time_dis[2] == 0:
+                    time_dis[2] = 1
+                else:
+                    time_dis[2] = 0
+            display(print_time(time_dis))
+            """
             if digit_position - 1 >= 0:
                 digit_position = digit_position - 1
             else:
@@ -143,32 +165,10 @@ def time_setter():
                 utime.sleep(2)
     
             print(digit_position)
+            """
             
         elif xValue >= 60000:
             xStatus = "right"
-            
-            if digit_position + 1 <= 2:
-                digit_position = digit_position + 1
-            else:
-                digit_position = 0
-            
-            
-            if digit_position == 0:
-                display("Hours")
-                utime.sleep(2)
-            elif digit_position == 1:
-                display("Minutes")
-                utime.sleep(2)
-            else:
-                display("AM/PM")
-                utime.sleep(2)
-            
-            print(digit_position)
-            
-        if yValue <= 600:
-            yStatus = "up"
-            
-            #change hours
             if digit_position == 0:
                 if time_dis[digit_position] + 1 <= 12:
                     time_dis[digit_position] = time_dis[digit_position] + 1
@@ -192,9 +192,56 @@ def time_setter():
             
             display(print_time(time_dis))
             
+        if yValue <= 600:
+            yStatus = "up"
+            
+            """
+            #change hours
+            if digit_position == 0:
+                if time_dis[digit_position] + 1 <= 12:
+                    time_dis[digit_position] = time_dis[digit_position] + 1
+                    if time_dis[digit_position] == 12:
+                        if time_dis[2] == 0:
+                            time_dis[2] = 1
+                        else:
+                            time_dis[2] = 0
+                else:
+                    time_dis[digit_position] = 1
+            elif digit_position == 1:
+                if time_dis[digit_position] + 1 <= 59:
+                    time_dis[digit_position] = time_dis[digit_position] + 1
+                else:
+                    time_dis[digit_position] = 0
+            else:
+                if time_dis[2] == 0:
+                    time_dis[2] = 1
+                else:
+                    time_dis[2] = 0
+            
+            display(print_time(time_dis))
+            """
+            
         elif yValue >= 60000:
             yStatus = "down"
             
+            if digit_position + 1 <= 2:
+                digit_position = digit_position + 1
+            else:
+                digit_position = 0
+            
+            
+            if digit_position == 0:
+                display("Hours")
+                utime.sleep(2)
+            elif digit_position == 1:
+                display("Minutes")
+                utime.sleep(2)
+            else:
+                display("AM/PM")
+                utime.sleep(2)
+            
+            print(digit_position)
+           """
             #change hours
             if digit_position == 0:
                 if time_dis[digit_position] - 1 >= 1:
@@ -217,6 +264,7 @@ def time_setter():
                 else:
                     time_dis[2] = 0
             display(print_time(time_dis))
+           """
             
         if joystick_buttonValue == 0:
             display("Exiting...")
