@@ -40,7 +40,7 @@ off_button = Pin(10, Pin.IN,Pin.PULL_DOWN) #initialize digital pin 10 as an inpu
 
 adc = ADC(Pin(26))
 
-motor_pin = machine.Pin(22, machine.Pin.OUT)
+motor_pin = machine.Pin(15, machine.Pin.OUT)
     
 def volume():
     while True:
@@ -125,30 +125,33 @@ def time_setter():
         joystick_buttonStatus = "not pressed"
         
         if xValue <= 600:
-            xStatus = "left"
+            xStatus = "change time/hour/ampm"
             
             if digit_position == 0:
-                if time_dis[digit_position] - 1 >= 1:
-                    time_dis[digit_position] = time_dis[digit_position] - 1
+                if time_dis[digit_position] + 1 <= 12:
+                    time_dis[digit_position] = time_dis[digit_position] + 1
                     if time_dis[digit_position] == 12:
                         if time_dis[2] == 0:
                             time_dis[2] = 1
                         else:
                             time_dis[2] = 0
                 else:
-                    time_dis[digit_position] = 12
+                    time_dis[digit_position] = 1
             elif digit_position == 1:
-                if time_dis[digit_position] - 1 >= 0:
-                    time_dis[digit_position] = time_dis[digit_position] - 1
+                if time_dis[digit_position] + 1 <= 59:
+                    time_dis[digit_position] = time_dis[digit_position] + 1
                 else:
-                    time_dis[digit_position] = 59
+                    time_dis[digit_position] = 0
             else:
                 if time_dis[2] == 0:
                     time_dis[2] = 1
                 else:
                     time_dis[2] = 0
+            
             display(print_time(time_dis))
-            """
+            
+        elif xValue >= 60000:
+            print("change mode")
             if digit_position - 1 >= 0:
                 digit_position = digit_position - 1
             else:
@@ -156,116 +159,18 @@ def time_setter():
                 
             if digit_position == 0:
                 display("Hours")
-                utime.sleep(2)
+                utime.sleep(0.5)
             elif digit_position == 1:
                 display("Minutes")
-                utime.sleep(2)
+                utime.sleep(0.5)
             else:
                 display("AM/PM")
-                utime.sleep(2)
+                utime.sleep(0.5)
     
             print(digit_position)
-            """
             
-        elif xValue >= 60000:
-            xStatus = "right"
-            if digit_position == 0:
-                if time_dis[digit_position] + 1 <= 12:
-                    time_dis[digit_position] = time_dis[digit_position] + 1
-                    if time_dis[digit_position] == 12:
-                        if time_dis[2] == 0:
-                            time_dis[2] = 1
-                        else:
-                            time_dis[2] = 0
-                else:
-                    time_dis[digit_position] = 1
-            elif digit_position == 1:
-                if time_dis[digit_position] + 1 <= 59:
-                    time_dis[digit_position] = time_dis[digit_position] + 1
-                else:
-                    time_dis[digit_position] = 0
-            else:
-                if time_dis[2] == 0:
-                    time_dis[2] = 1
-                else:
-                    time_dis[2] = 0
-            
-            display(print_time(time_dis))
-            
-        if yValue <= 600:
-            yStatus = "up"
-            
-            """
-            #change hours
-            if digit_position == 0:
-                if time_dis[digit_position] + 1 <= 12:
-                    time_dis[digit_position] = time_dis[digit_position] + 1
-                    if time_dis[digit_position] == 12:
-                        if time_dis[2] == 0:
-                            time_dis[2] = 1
-                        else:
-                            time_dis[2] = 0
-                else:
-                    time_dis[digit_position] = 1
-            elif digit_position == 1:
-                if time_dis[digit_position] + 1 <= 59:
-                    time_dis[digit_position] = time_dis[digit_position] + 1
-                else:
-                    time_dis[digit_position] = 0
-            else:
-                if time_dis[2] == 0:
-                    time_dis[2] = 1
-                else:
-                    time_dis[2] = 0
-            
-            display(print_time(time_dis))
-            """
-            
-        elif yValue >= 60000:
-            yStatus = "down"
-            
-            if digit_position + 1 <= 2:
-                digit_position = digit_position + 1
-            else:
-                digit_position = 0
-            
-            
-            if digit_position == 0:
-                display("Hours")
-                utime.sleep(2)
-            elif digit_position == 1:
-                display("Minutes")
-                utime.sleep(2)
-            else:
-                display("AM/PM")
-                utime.sleep(2)
-            
-            print(digit_position)
-           """
-            #change hours
-            if digit_position == 0:
-                if time_dis[digit_position] - 1 >= 1:
-                    time_dis[digit_position] = time_dis[digit_position] - 1
-                    if time_dis[digit_position] == 12:
-                        if time_dis[2] == 0:
-                            time_dis[2] = 1
-                        else:
-                            time_dis[2] = 0
-                else:
-                    time_dis[digit_position] = 12
-            elif digit_position == 1:
-                if time_dis[digit_position] - 1 >= 0:
-                    time_dis[digit_position] = time_dis[digit_position] - 1
-                else:
-                    time_dis[digit_position] = 59
-            else:
-                if time_dis[2] == 0:
-                    time_dis[2] = 1
-                else:
-                    time_dis[2] = 0
-            display(print_time(time_dis))
-           """
-            
+        
+        
         if joystick_buttonValue == 0:
             display("Exiting...")
             utime.sleep(2)
@@ -471,6 +376,7 @@ def colors_off():
     np.write()
 
 def alarm_on(dt):
+    turn_motor_on()
     second_thread = _thread.start_new_thread(buzzer_start,())
     #turn_motor_on()
     new_dt = alarm_colors(dt)
@@ -502,7 +408,6 @@ def time_led_check(t):
 
 
 def driver():
-    turn_motor_on()
     oled.text("Hello!", 45, 0)
     oled.text("I am your clock", 5, 20)
     oled.text(":)", 45, 40)
@@ -548,7 +453,7 @@ def driver():
             display_time = time_dis
             utime.sleep(1)
         else:
-            for i in range(5):
+            for i in range(60):
                 if joystick_button.value() == 0:
                     break
                 utime.sleep(1)
