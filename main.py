@@ -224,7 +224,7 @@ def buzzer_start():
         logic_state = off_button.value()
         if logic_state == True:
             return 0
-        duty = volume()
+        duty = 32765
         for i in range(len(song)):
             if song[i] == "P":
                 buzzer.duty_u16(0)
@@ -417,7 +417,7 @@ def driver():
     oled.fill(0)
     
     
-    
+    global led_status
     global time_dis
     display_time = [3,50,0]
     alarm_time = [4,1,0]
@@ -443,6 +443,7 @@ def driver():
     time_setter()
     display_time = time_dis
     oled.fill(0)
+    
 
     while True:
         if joystick_button.value() == 0:
@@ -454,14 +455,18 @@ def driver():
                 if joystick_button.value() == 0:
                     break
                 utime.sleep(1)
+                print(i)
             clock_updater(display_time)
             
             to_display = print_time(display_time)
             display(to_display)
             
         if display_time == alarm_time:
-            alarm_on(display_time)
+            tmp = alarm_on(display_time)
             alarm_off()
+            display_time = tmp
+            led_status = "na"
+            
 
             
 driver()
