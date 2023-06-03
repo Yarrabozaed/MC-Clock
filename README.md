@@ -2,7 +2,7 @@
 This project was created by Yarra Abozaed (CS), Alison Langer (CS), and Anna Rogers (EE).
 
 # Final Product: 
-Click [here]() to view our final prodcut presentation!
+Click [here](https://github.com/Yarrabozaed/MC-Clock/blob/main/CPE3280%20-%20Final%20Report.pdf) to view our final prodcut presentation!
 
 # Project Goal:
 Our system will be marketed for people who are hearing impaired. Our alarm clock will include:
